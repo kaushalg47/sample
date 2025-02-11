@@ -1,0 +1,43 @@
+stages:
+  - test
+  - notify
+  - deploy
+
+variables:
+  COVERAGE_THRESHOLD: "85"
+
+test:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - pytest --cov=main --cov-report=term-missing --cov-fail-under=$COVERAGE_THRESHOLD
+  artifacts:
+    reports:
+      junit: report.xml
+  allow_failure: false  # Fail pipeline if tests fail
+
+notify:
+  stage: notify
+  script:
+    - coverage=$(pytest --cov=main --cov-report=term-missing | grep 'TOTAL' | awk '{print $4}' | tr -d '%')
+    - echo "Test Coverage: $coverage%"
+    - |
+      if [ "$coverage" -lt "$COVERAGE_THRESHOLD" ]; then
+        echo "Test coverage is below $COVERAGE_THRESHOLD%. Sending email..."
+        echo "Test coverage dropped below $COVERAGE_THRESHOLD% ($coverage%)" | mail -s "Low Test Coverage Alert" team@example.com
+        exit 1  # Fail pipeline if coverage is low
+      fi
+  dependencies:
+    - test
+  allow_failure: false
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying application..."
+  only:
+    - main  # Deploy only from the main branch
+  dependencies:
+    - test
+    - notify
+  when: on_success  # Deploy only if all checks pass
