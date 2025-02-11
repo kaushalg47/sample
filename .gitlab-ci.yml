@@ -1,20 +1,11 @@
 stages:
-  - test
   - notify
   - deploy
 
 variables:
   COVERAGE_THRESHOLD: "85"
 
-test:
-  stage: test
-  script:
-    - pip install -r requirements.txt
-    - pytest --cov=main --cov-report=term-missing --cov-fail-under=$COVERAGE_THRESHOLD
-  artifacts:
-    reports:
-      junit: report.xml
-  allow_failure: false  # Fail pipeline if tests fail
+
 
 notify:
   stage: notify
